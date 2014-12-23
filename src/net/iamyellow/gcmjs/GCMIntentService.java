@@ -36,6 +36,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 
+import org.json.JSONObject;
 
 public class GCMIntentService extends IntentService 
 {
@@ -82,29 +83,32 @@ public class GCMIntentService extends IntentService
 				}
             	
 				GcmjsModule.logd(TAG+": extras.toString():"+ extras.toString());
+
+				// Generate Data and Convert JSON format
+				HashMap<String, Object> jsonData = new HashMap<String, Object>();
+				for (String key : extras.keySet()) {
+					String value = extras.getString(key);
+					if (value != null && !"".equals(value)) {
+						jsonData.put(key, value);
+					}
+				}
+				JSONObject json = new JSONObject(jsonData);
+
 				// フォアグラウンドの場合だけPush通知
 				if (!isInForeground()) {
 					TiApplication tiapp = TiApplication.getInstance();
 					Intent launcherIntent = new Intent(tiapp, GcmjsService.class);
-					for (String key : extras.keySet()) {
-						String eventKey = key.startsWith("data.") ? key.substring(5) : key;
-						String data = extras.getString(key);
-						if (data != null && !"".equals(data)) {
-							launcherIntent.putExtra(eventKey, extras.getString(key));
-						}
-					}
+					launcherIntent.putExtra("data", json.toString());
 					tiapp.startService(launcherIntent);
-				
-	            }
+				}
 				else 
 				{
-		        	HashMap<String, Object> messageData = new HashMap<String, Object>();
-		        	messageData.put("inBackground", 0);
-		        	messageData.put("message", extras.toString());
-			    	fireMessage(messageData);
-	            }
-            	
-            }
+					HashMap<String, Object> messageData = new HashMap<String, Object>();
+					messageData.put("data", json.toString());
+					fireMessage(messageData);
+				}
+				
+			}
         }
         GCMBroadcastReceiver.completeWakefulIntent(intent);
     }

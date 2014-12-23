@@ -303,12 +303,7 @@ public class GcmjsModule extends KrollModule {
 
 			logd("Callback event should have been fired.");
 		}
-		Integer inBackground = (Integer)messageData.get("inBackground");
-		String message      = (String)messageData.get("message");
-		KrollDict event = new KrollDict();
-		event.put("inBackground", inBackground);
-		event.put("message", message);
-		fireEvent("callback", event);
+		fireEvent("callback", messageData);
 	}
 
 	public void fireData() {
