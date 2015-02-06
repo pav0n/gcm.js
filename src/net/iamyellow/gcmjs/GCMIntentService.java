@@ -87,9 +87,8 @@ public class GCMIntentService extends IntentService
 				// Generate Data and Convert JSON format
 				HashMap<String, Object> jsonData = new HashMap<String, Object>();
 				for (String key : extras.keySet()) {
-					String value = extras.getString(key);
-					if (value != null && !"".equals(value)) {
-						jsonData.put(key, value);
+					if (extras.get(key) != null && !"".equals(extras.get(key))) {
+						jsonData.put(key, extras.get(key));
 					}
 				}
 				JSONObject json = new JSONObject(jsonData);

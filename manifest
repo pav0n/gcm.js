@@ -15,4 +15,4 @@ name: gcmjs
 moduleid: net.iamyellow.gcmjs
 guid: 
 platform: android
-minsdk: 3.4.0.GA
+minsdk: 3.5.0.GA
