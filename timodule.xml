@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ti:module xmlns:ti="http://ti.appcelerator.org" xmlns:android="http://schemas.android.com/apk/res/android">
+	<property name="ti.android.debug" type="bool">false</property> <!-- @todo for Debug -->
 	<android xmlns:android="http://schemas.android.com/apk/res/android">
 		<manifest>
 			<application>
@@ -16,7 +17,7 @@
 				<service android:name="net.iamyellow.gcmjs.GcmjsService"/>
 				<activity android:name="net.iamyellow.gcmjs.GcmjsActivity" android:noHistory="true" android:theme="@style/Theme.Titanium">
 					<intent-filter>
-						<action android:name="android.intent.action.VIEW"/>
+						<action android:name="android.intent.action.MAIN"/>
 						<category android:name="android.intent.category.DEFAULT"/>
 						<category android:name="android.intent.category.BROWSABLE"/>
 					</intent-filter>

@@ -22,6 +22,7 @@ import java.util.List;
 import org.appcelerator.titanium.TiApplication;
 import org.appcelerator.titanium.util.TiRHelper;
 import org.appcelerator.titanium.util.TiRHelper.ResourceNotFoundException;
+import org.appcelerator.titanium.TiC;
 
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import android.support.v4.app.NotificationCompat;
@@ -30,6 +31,7 @@ import android.app.IntentService;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.Service;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningAppProcessInfo;
 import android.content.Context;
@@ -42,98 +44,84 @@ public class GCMIntentService extends IntentService
 {
 	private static final String TAG = "GCMIntentService";
 
-    public static final int NOTIFICATION_ID = 1;
-    private NotificationManager mNotificationManager;
-    NotificationCompat.Builder builder;
+	public static final int NOTIFICATION_ID = 1;
+	private NotificationManager mNotificationManager;
+	NotificationCompat.Builder builder;
 
-    public GCMIntentService() 
-	{
+	public GCMIntentService() {
 		super(GCMIntentService.class.getSimpleName());
-    }
-    
-    @Override
-    protected void onHandleIntent(Intent intent) 
-	{
-        Bundle extras = intent.getExtras();
-        GoogleCloudMessaging gcm = GoogleCloudMessaging.getInstance(this);
-        String messageType = gcm.getMessageType(intent);
- 
-        if (!extras.isEmpty()) 
-		{
-			if (messageType == null) 
-			{
-            	GcmjsModule.logd(TAG+": messageType is null");
-			}
-			else if (GoogleCloudMessaging.MESSAGE_TYPE_DELETED.equals(messageType)) 
-			{
-            	
-            	GcmjsModule.logd(TAG+": deleted");
-            	
-            }
-			else if (GoogleCloudMessaging.MESSAGE_TYPE_MESSAGE.equals(messageType)) 
-			{
-            	int appIconId = 0;
-				try 
-				{
-					appIconId = TiRHelper.getApplicationResource("drawable.appicon");
-				}
-				catch (ResourceNotFoundException e) 
-				{
-					GcmjsModule.logd(TAG+": ResourceNotFoundException: "+e.getMessage());
-				}
-            	
-				GcmjsModule.logd(TAG+": extras.toString():"+ extras.toString());
+	}
 
-				// Generate Data and Convert JSON format
+	@Override
+	protected void onHandleIntent(Intent intent) {
+		Bundle extras = intent.getExtras();
+		GoogleCloudMessaging gcm = GoogleCloudMessaging.getInstance(this);
+		String messageType = gcm.getMessageType(intent);
+ 
+		if (!extras.isEmpty()) {
+			if (messageType == null) {
+				GcmjsModule.logd(TAG+": messageType is null");
+				GcmjsModule.logd(TAG+": ----------------:"+ extras.toString());
+			}
+			else if (GoogleCloudMessaging.MESSAGE_TYPE_DELETED.equals(messageType)) {
+				
+				GcmjsModule.logd(TAG+": deleted");
+				
+			}
+			else if (GoogleCloudMessaging.MESSAGE_TYPE_MESSAGE.equals(messageType)) {
+				//
+				// Push Notification Received
+				//
+
+				// Generate Data 
+				GcmjsModule.logd(TAG+": extras.toString():"+ extras.toString());
 				HashMap<String, Object> jsonData = new HashMap<String, Object>();
 				for (String key : extras.keySet()) {
 					if (extras.get(key) != null && !"".equals(extras.get(key))) {
 						jsonData.put(key, extras.get(key));
 					}
 				}
+
+				// Convert JSON format
 				JSONObject json = new JSONObject(jsonData);
 
-				// フォアグラウンドの場合だけPush通知
+				// Whether the App is launched or not
 				if (!isInForeground()) {
+					// Background
 					TiApplication tiapp = TiApplication.getInstance();
 					Intent launcherIntent = new Intent(tiapp, GcmjsService.class);
 					launcherIntent.putExtra("data", json.toString());
+
+					// set Service Mode "START_NOT_STICKY".
+					// @see http://developer.android.com/reference/android/app/Service.html#START_NOT_STICKY
+					// default is "START_REDELIVER_INTENT" defined in TiJSService
+					launcherIntent.putExtra(TiC.INTENT_PROPERTY_START_MODE, Service.START_NOT_STICKY);
+
+					// Start service
 					tiapp.startService(launcherIntent);
 				}
-				else 
-				{
-					HashMap<String, Object> messageData = new HashMap<String, Object>();
-					messageData.put("data", json.toString());
-					fireMessage(messageData);
+				else {
+					// Forground. Send message to App
+					GcmjsModule module = GcmjsModule.getInstance();
+					if (module != null) {
+						module.fireMessage(json.toString());
+					}
+					else {
+						GcmjsModule.logd(TAG+": fireMessage module instance not found.");
+					}
 				}
-				
 			}
-        }
-        GCMBroadcastReceiver.completeWakefulIntent(intent);
-    }
-    
-    public static void fireMessage(HashMap<String, Object> messageData) 
-	{
-    	GcmjsModule module = GcmjsModule.getInstance();
-    	if (module != null) 
-		{
-	    	module.fireMessage(messageData);
-    	}
-		else 
-		{
-    		GcmjsModule.logd(TAG+": fireMessage module instance not found.");
-    	}
-    }
+		}
+		GCMBroadcastReceiver.completeWakefulIntent(intent);
+	}
 
-    public static boolean isInForeground() 
-	{
+	public static boolean isInForeground() {
 		Context context = TiApplication.getInstance().getApplicationContext();
 		ActivityManager am = (ActivityManager)context.getSystemService(Context.ACTIVITY_SERVICE);
-        String packageName = context.getPackageName();
+		String packageName = context.getPackageName();
 		if (am.getRunningTasks(1).get(0).topActivity.getPackageName().equals(packageName)) {
 			return true;
 		}
 	    return false;
 	}
-	
 }

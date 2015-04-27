@@ -40,14 +40,9 @@ public class GcmjsModule extends KrollModule {
 	// *************************************************************
 	// constants
 
-	private static final String PROPERTY_ON_SUCCESS = "success";
-	private static final String PROPERTY_ON_ERROR = "error";
-	private static final String PROPERTY_ON_MESSAGE = "callback";
-	private static final String PROPERTY_ON_UNREGISTER = "unregister";
-	private static final String PROPERTY_ON_DATA = "data";
-
 	private static final String EVENT_PROPERTY_DEVICE_TOKEN = "deviceToken";
 	private static final String EVENT_PROPERTY_ERROR = "error";
+	private static final String EVENT_PROPERTY_DATA = "data";
 
 	public static String PROPERTY_SENDER_ID = "GCM_sender_id";
 	public static final boolean DBG = org.appcelerator.kroll.common.TiConfig.LOGD;
@@ -68,15 +63,6 @@ public class GcmjsModule extends KrollModule {
 	}
 
 	// *************************************************************
-	// callbacks
-
-	private static KrollFunction onSuccessCallback;
-	private static KrollFunction onErrorCallback;
-	private static KrollFunction onMessageCallback;
-	private static KrollFunction onUnregisterCallback;
-	private static KrollFunction onDataCallback;
-
-	// *************************************************************
 	// singleton
 
 	private static GcmjsModule instance = null;
@@ -88,107 +74,41 @@ public class GcmjsModule extends KrollModule {
 	// *************************************************************
 	// constructor
 
-	private static AppStateListener appStateListener = null;
-
 	public GcmjsModule() {
 		super();
 
-		onSuccessCallback = null;
-		onErrorCallback = null;
-		onMessageCallback = null;
-		onUnregisterCallback = null;
-		onDataCallback = null;
-
 		instance = this;
-		if (appStateListener == null) {
-			appStateListener = new AppStateListener();
-			TiApplication.addActivityTransitionListener(appStateListener);
-		}
-	}
-
-	// *************************************************************
-	// related to activities lifecycle
-
-	public boolean isInFg() {
-		if (!KrollRuntime.isInitialized()) {
-			return false;
-		}
-
-		if (AppStateListener.oneActivityIsResumed) {
-			return true;
-		}
-
-		return false;
-	}
-
-	@Kroll.getProperty
-	@Kroll.method
-	public boolean getIsLauncherActivity() {
-		return AppStateListener.appWasNotRunning;
 	}
 
 	// *************************************************************
 	// registration
 
 	@Kroll.method
-	public void registerForPushNotifications(Object arg) {
+	public void registerForPushNotifications() {
 
-		// collect parameters
-		@SuppressWarnings("unchecked")
-		HashMap<String, Object> kd = (HashMap<String, Object>) arg;
-		Object pOnSuccessCallback = kd.get(PROPERTY_ON_SUCCESS);
-		Object pOnErrorCallback = kd.get(PROPERTY_ON_ERROR);
-		Object pOnMessageCallback = kd.get(PROPERTY_ON_MESSAGE);
-		Object pOnUnregisterCallback = kd.get(PROPERTY_ON_UNREGISTER);
-		Object pOnDataCallback = kd.get(PROPERTY_ON_DATA);
+		new AsyncTask<Void, Void, String>() {
+			@Override
+			protected String doInBackground(Void... params) {
+				String msg = "";
+				try {
+					if (gcm == null) {
+						Context context = TiApplication.getInstance().getApplicationContext();
+						gcm = GoogleCloudMessaging.getInstance(context);
+					}
+					String registrationId = gcm.register(TiApplication.getInstance().getAppProperties().getString(GcmjsModule.PROPERTY_SENDER_ID, ""));
+					msg = "Device registered: registrationId = " + registrationId;
+					fireSuccess(registrationId);
+				} catch (IOException e) {
+					msg = "Error: " + e.getMessage();
+					fireError(msg);
+				}
+				return msg;
+			}
 
-		if (pOnSuccessCallback instanceof KrollFunction) {
-			logd("Setting onSuccessCallback.");
-			onSuccessCallback = (KrollFunction) pOnSuccessCallback;
-		}
-		if (pOnErrorCallback instanceof KrollFunction) {
-			logd("Setting onErrorCallback.");
-			onErrorCallback = (KrollFunction) pOnErrorCallback;
-		}
-		if (pOnMessageCallback instanceof KrollFunction) {
-			logd("Setting onMessageCallback.");
-			onMessageCallback = (KrollFunction) pOnMessageCallback;
-		}
-		if (pOnUnregisterCallback instanceof KrollFunction) {
-			logd("Setting onUnregisterCallback.");
-			onUnregisterCallback = (KrollFunction) pOnUnregisterCallback;
-		}
-		if (pOnDataCallback instanceof KrollFunction) {
-			logd("Setting onDataCallback.");
-			onDataCallback = (KrollFunction) pOnDataCallback;
-		}
-
-		// if we're executing this, we **SHOULD BE** in fg
-		AppStateListener.oneActivityIsResumed = true;
-
-        new AsyncTask<Void, Void, String>() {
-            @Override
-            protected String doInBackground(Void... params) {
-            	String msg = "";
-                try {
-                    if (gcm == null) {
-                    	Context context = TiApplication.getInstance().getApplicationContext();
-                        gcm = GoogleCloudMessaging.getInstance(context);
-                    }
-                    String registrationId = gcm.register(TiApplication.getInstance().getAppProperties().getString(GcmjsModule.PROPERTY_SENDER_ID, ""));
-                    msg = "Device registered: registrationId = " + registrationId;
-                    fireSuccess(registrationId);
-                } catch (IOException e) {
-                	msg = "Error: " + e.getMessage();
-                	fireError(msg);
-                }
-                return msg;
-            }
- 
-            @Override
-            protected void onPostExecute(String msg) {
-            }
-        }.execute(null, null, null);
+			@Override
+			protected void onPostExecute(String msg) {
+			}
+		}.execute(null, null, null);
 	}
 
 	// *************************************************************
@@ -206,115 +126,33 @@ public class GcmjsModule extends KrollModule {
 	}
 
 	// *************************************************************
-	// data
-
-	private static HashMap<String, Object> data = null;
-	private static boolean pendingData = false;
-
-	@SuppressWarnings("rawtypes")
-	@Kroll.getProperty
-	@Kroll.method
-	public HashMap getData() {
-		logd("Getting data.");
-
-		return data;
-	}
-
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	@Kroll.setProperty
-	@Kroll.method
-	public void setData(HashMap pData) {
-		logd("Setting data.");
-
-		data = pData;
-
-		if (AppStateListener.appWasNotRunning) {
-			logd("Setting data while we're in bg.");
-			return;
-		}
-
-		if (data != null) {
-			logd("Mark pending data.");
-			pendingData = true;
-		} else {
-			logd("No pending data to mark.");
-		}
-	}
-
-	public void executeActionsWhileIfForeground() {
-		logd("Checking for foreground pending actions.");
-		if (pendingData) {
-			logd("Found pending data.");
-			pendingData = false;
-			fireData();
-		} else {
-			logd("No pending data found.");
-		}
-	}
-
-	// *************************************************************
 	// events
 
 	public void fireSuccess(String registrationId) {
 		logd("Start firing success.");
-		if (onSuccessCallback != null) {
-			HashMap<String, String> result = new HashMap<String, String>();
-			result.put(EVENT_PROPERTY_DEVICE_TOKEN, registrationId);
-			onSuccessCallback.call(getKrollObject(), result);
-
-			logd("Success event should have been fired.");
-		}
 		KrollDict event = new KrollDict();
-		event.put("deviceToken", registrationId);
+		event.put(EVENT_PROPERTY_DEVICE_TOKEN, registrationId);
 		fireEvent("success", event);     
 	}
 
 	public void fireError(String error) {
 		logd("Start firing error.");
-		if (onErrorCallback != null) {
-			HashMap<String, String> result = new HashMap<String, String>();
-			result.put(EVENT_PROPERTY_ERROR, error);
-			onErrorCallback.call(getKrollObject(), result);
-
-			logd("Error event should have been fired.");
-		}
 		KrollDict event = new KrollDict();
-		event.put("error", error);
+		event.put(EVENT_PROPERTY_ERROR, error);
 		fireEvent("error", event);
 	}
 
 	public void fireUnregister(String registrationId) {
 		logd("Start firing unregister.");
-		if (onUnregisterCallback != null) {
-			logd("Should fire unregister.");
-			HashMap<String, String> result = new HashMap<String, String>();
-			result.put(EVENT_PROPERTY_DEVICE_TOKEN, registrationId);
-			onUnregisterCallback.call(getKrollObject(), result);
-		}
 		KrollDict event = new KrollDict();
-		event.put("deviceToken", registrationId);
+		event.put(EVENT_PROPERTY_DEVICE_TOKEN, registrationId);
 		fireEvent("unregister", event);
 	}
 
-	public void fireMessage(HashMap<String, Object> messageData) {
+	public void fireMessage(String message) {
 		logd("Start firing callback.");
-		if (onMessageCallback != null) {
-			onMessageCallback.call(getKrollObject(), messageData);
-
-			logd("Callback event should have been fired.");
-		}
-		fireEvent("callback", messageData);
-	}
-
-	public void fireData() {
-		logd("Start firing data.");
-		if (onDataCallback != null) {
-			onDataCallback.call(getKrollObject(), data);
-			logd("Data event should have been fired.");
-		}
-
 		KrollDict event = new KrollDict();
-		event.put("data", data);
-		fireEvent("data", event);
+		event.put(EVENT_PROPERTY_DATA, message);
+		fireEvent("callback", event);
 	}
 }
