@@ -41,7 +41,7 @@
 	// create launcher intent
 	var ntfId = Ti.App.Properties.getInt('ntfId', 0),
 	launcherIntent = Ti.Android.createIntent({
-		className: 'net.iamyellow.gcmjs.GcmjsActivity',
+		url: 'gcm_activity.js',
 		action: 'action' + ntfId, // we need an action identifier to be able to track click on notifications
 		packageName: Ti.App.id,
 		flags: Ti.Android.FLAG_ACTIVITY_NEW_TASK | Ti.Android.FLAG_ACTIVITY_SINGLE_TOP

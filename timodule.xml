@@ -15,13 +15,7 @@
 				</receiver>
 				<service android:name="net.iamyellow.gcmjs.GCMIntentService" />
 				<service android:name="net.iamyellow.gcmjs.GcmjsService"/>
-				<activity android:name="net.iamyellow.gcmjs.GcmjsActivity" android:noHistory="true" android:theme="@style/Theme.Titanium">
-					<intent-filter>
-						<action android:name="android.intent.action.MAIN"/>
-						<category android:name="android.intent.category.DEFAULT"/>
-						<category android:name="android.intent.category.BROWSABLE"/>
-					</intent-filter>
-				</activity>
+				
 			</application>
 
 			<!-- begin gcm.js module -->

@@ -12,14 +12,4 @@
 		gcm.unregisterForPushNotifications();
 	};
 
-	API.getData = function () {
-		var data = gcm.data;
-		return !data ? null : data;
-	};
-
-	API.setData = function (data) {
-		gcm.data = data;
-	};
-
-
 })(module.exports);
