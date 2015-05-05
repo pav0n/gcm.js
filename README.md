@@ -1,3 +1,5 @@
+http://pav0n.github.io/2015/05/01/titanium-push-notifications-en-android/
+
 # gcm.js
 
 **gcm.js** is an open source module for Titanium Android SDK that lets developers receive GCM push notifications in their Android apps.
