@@ -38,7 +38,6 @@ public class GCMIntentService extends IntentService
 	private static final String TAG = "GCMIntentService";
 
 	public static final int NOTIFICATION_ID = 1;
-	private NotificationManager mNotificationManager;
 	NotificationCompat.Builder builder;
 
 	public GCMIntentService() {
