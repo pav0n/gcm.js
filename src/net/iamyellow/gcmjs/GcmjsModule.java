@@ -16,14 +16,11 @@
 
 package net.iamyellow.gcmjs;
 
-import java.util.HashMap;
 import java.io.IOException;
 
 import org.appcelerator.kroll.KrollDict;
 import org.appcelerator.kroll.common.Log;
 import org.appcelerator.kroll.KrollModule;
-import org.appcelerator.kroll.KrollFunction;
-import org.appcelerator.kroll.KrollRuntime;
 import org.appcelerator.kroll.annotations.Kroll;
 import org.appcelerator.titanium.TiApplication;
 

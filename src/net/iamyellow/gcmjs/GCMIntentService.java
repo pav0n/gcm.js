@@ -17,23 +17,16 @@
 package net.iamyellow.gcmjs;
 
 import java.util.HashMap;
-import java.util.List;
-
 import org.appcelerator.titanium.TiApplication;
-import org.appcelerator.titanium.util.TiRHelper;
-import org.appcelerator.titanium.util.TiRHelper.ResourceNotFoundException;
 import org.appcelerator.titanium.TiC;
 
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import android.support.v4.app.NotificationCompat;
 
 import android.app.IntentService;
-import android.app.Notification;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.app.ActivityManager;
-import android.app.ActivityManager.RunningAppProcessInfo;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
