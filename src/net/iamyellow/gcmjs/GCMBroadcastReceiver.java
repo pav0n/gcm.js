@@ -15,7 +15,6 @@
 //
 
 package net.iamyellow.gcmjs;
-
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
